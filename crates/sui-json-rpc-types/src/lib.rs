@@ -37,7 +37,7 @@ use sui_types::base_types::{
 use sui_types::committee::EpochId;
 use sui_types::crypto::{AuthorityStrongQuorumSignInfo, SignableBytes, Signature};
 use sui_types::error::SuiError;
-use sui_types::event::{Event, TransferType};
+use sui_types::event::Event;
 use sui_types::event::{EventEnvelope, EventType};
 use sui_types::filter::{EventFilter, TransactionFilter};
 use sui_types::gas::GasCostSummary;
@@ -1992,16 +1992,30 @@ pub enum SuiEvent {
         package_id: ObjectID,
     },
     /// Transfer objects to new address / wrap in another object / coin
+    CoinBalanceChange {
+        package_id: ObjectID,
+        transaction_module: String,
+        sender: SuiAddress,
+        owner: Owner,
+        coin_type: String,
+        coin_object_id: ObjectID,
+        version: SequenceNumber,
+        amount: i128,
+    },
+    /// Epoch change
+    EpochChange(EpochId),
+    /// New checkpoint
+    Checkpoint(CheckpointSequenceNumber),
+    /// Transfer objects to new address / wrap in another object / coin
     #[serde(rename_all = "camelCase")]
     TransferObject {
         package_id: ObjectID,
         transaction_module: String,
         sender: SuiAddress,
         recipient: Owner,
+        object_type: String,
         object_id: ObjectID,
         version: SequenceNumber,
-        type_: TransferType,
-        amount: Option<u64>,
     },
     /// Delete object
     #[serde(rename_all = "camelCase")]
@@ -2010,6 +2024,7 @@ pub enum SuiEvent {
         transaction_module: String,
         sender: SuiAddress,
         object_id: ObjectID,
+        version: SequenceNumber,
     },
     /// New object creation
     #[serde(rename_all = "camelCase")]
@@ -2018,12 +2033,9 @@ pub enum SuiEvent {
         transaction_module: String,
         sender: SuiAddress,
         recipient: Owner,
+        object_type: String,
         object_id: ObjectID,
     },
-    /// Epoch change
-    EpochChange(EpochId),
-    /// New checkpoint
-    Checkpoint(CheckpointSequenceNumber),
 }
 
 impl TryFrom<SuiEvent> for Event {
@@ -2050,46 +2062,67 @@ impl TryFrom<SuiEvent> for Event {
                 transaction_module,
                 sender,
                 recipient,
+                object_type,
                 object_id,
                 version,
-                type_,
-                amount,
             } => Event::TransferObject {
                 package_id,
                 transaction_module: Identifier::from_str(&transaction_module)?,
                 sender,
                 recipient,
+                object_type,
                 object_id,
                 version,
-                type_,
-                amount,
             },
             SuiEvent::DeleteObject {
                 package_id,
                 transaction_module,
                 sender,
                 object_id,
+                version,
             } => Event::DeleteObject {
                 package_id,
                 transaction_module: Identifier::from_str(&transaction_module)?,
                 sender,
                 object_id,
+                version,
             },
             SuiEvent::NewObject {
                 package_id,
                 transaction_module,
                 sender,
                 recipient,
+                object_type,
                 object_id,
             } => Event::NewObject {
                 package_id,
                 transaction_module: Identifier::from_str(&transaction_module)?,
                 sender,
                 recipient,
+                object_type,
                 object_id,
             },
             SuiEvent::EpochChange(id) => Event::EpochChange(id),
             SuiEvent::Checkpoint(seq) => Event::Checkpoint(seq),
+            SuiEvent::CoinBalanceChange {
+                package_id,
+                transaction_module,
+                sender,
+                owner,
+                coin_object_id: coin_id,
+                version,
+                coin_type,
+                amount,
+            } => Event::CoinBalanceChange {
+                package_id,
+                transaction_module: Identifier::from_str(&transaction_module)?,
+                sender,
+                owner,
+                coin_type,
+                coin_object_id: coin_id,
+                version,
+                amount,
+            },
         })
     }
 }
@@ -2134,46 +2167,67 @@ impl SuiEvent {
                 transaction_module,
                 sender,
                 recipient,
+                object_type,
                 object_id,
                 version,
-                type_,
-                amount,
             } => SuiEvent::TransferObject {
                 package_id,
                 transaction_module: transaction_module.to_string(),
                 sender,
                 recipient,
+                object_type,
                 object_id,
                 version,
-                type_,
-                amount,
             },
             Event::DeleteObject {
                 package_id,
                 transaction_module,
                 sender,
                 object_id,
+                version,
             } => SuiEvent::DeleteObject {
                 package_id,
                 transaction_module: transaction_module.to_string(),
                 sender,
                 object_id,
+                version,
             },
             Event::NewObject {
                 package_id,
                 transaction_module,
                 sender,
                 recipient,
+                object_type,
                 object_id,
             } => SuiEvent::NewObject {
                 package_id,
                 transaction_module: transaction_module.to_string(),
                 sender,
                 recipient,
+                object_type,
                 object_id,
             },
             Event::EpochChange(id) => SuiEvent::EpochChange(id),
             Event::Checkpoint(seq) => SuiEvent::Checkpoint(seq),
+            Event::CoinBalanceChange {
+                package_id,
+                transaction_module,
+                sender,
+                owner,
+                coin_object_id: coin_id,
+                version,
+                coin_type,
+                amount,
+            } => SuiEvent::CoinBalanceChange {
+                package_id,
+                transaction_module: transaction_module.to_string(),
+                sender,
+                owner,
+                coin_object_id: coin_id,
+                version,
+                coin_type: coin_type.to_string(),
+                amount,
+            },
         })
     }
 }
@@ -2229,20 +2283,18 @@ impl PartialEq<SuiEvent> for Event {
                 transaction_module: self_transaction_module,
                 sender: self_sender,
                 recipient: self_recipient,
-                type_: self_type,
+                object_type: self_object_type,
                 object_id: self_object_id,
                 version: self_version,
-                amount: self_amount,
             } => {
                 if let SuiEvent::TransferObject {
                     package_id,
                     transaction_module,
                     sender,
                     recipient,
+                    object_type,
                     object_id,
                     version,
-                    type_,
-                    amount,
                 } = other
                 {
                     package_id == self_package_id
@@ -2251,8 +2303,7 @@ impl PartialEq<SuiEvent> for Event {
                         && self_recipient == recipient
                         && self_object_id == object_id
                         && self_version == version
-                        && self_type == type_
-                        && self_amount == amount
+                        && self_object_type == object_type
                 } else {
                     false
                 }
@@ -2262,18 +2313,21 @@ impl PartialEq<SuiEvent> for Event {
                 transaction_module: self_transaction_module,
                 sender: self_sender,
                 object_id: self_object_id,
+                version: self_version,
             } => {
                 if let SuiEvent::DeleteObject {
                     package_id,
                     transaction_module,
                     sender,
                     object_id,
+                    version,
                 } = other
                 {
                     package_id == self_package_id
                         && &self_transaction_module.to_string() == transaction_module
                         && self_sender == sender
                         && self_object_id == object_id
+                        && self_version == version
                 } else {
                     false
                 }
@@ -2283,6 +2337,7 @@ impl PartialEq<SuiEvent> for Event {
                 transaction_module: self_transaction_module,
                 sender: self_sender,
                 recipient: self_recipient,
+                object_type: self_object_type,
                 object_id: self_object_id,
             } => {
                 if let SuiEvent::NewObject {
@@ -2290,6 +2345,7 @@ impl PartialEq<SuiEvent> for Event {
                     transaction_module,
                     sender,
                     recipient,
+                    object_type,
                     object_id,
                 } = other
                 {
@@ -2298,6 +2354,7 @@ impl PartialEq<SuiEvent> for Event {
                         && self_sender == sender
                         && self_recipient == recipient
                         && self_object_id == object_id
+                        && self_object_type == object_type
                 } else {
                     false
                 }
@@ -2312,6 +2369,39 @@ impl PartialEq<SuiEvent> for Event {
             Event::Checkpoint(self_id) => {
                 if let SuiEvent::Checkpoint(id) = other {
                     self_id == id
+                } else {
+                    false
+                }
+            }
+            Event::CoinBalanceChange {
+                package_id: self_package_id,
+                transaction_module: self_transaction_module,
+                sender: self_sender,
+                owner: self_owner,
+                coin_object_id: self_coin_id,
+                version: self_version,
+                coin_type: self_coin_type,
+                amount: self_amount,
+            } => {
+                if let SuiEvent::CoinBalanceChange {
+                    package_id,
+                    transaction_module,
+                    sender,
+                    owner,
+                    coin_object_id,
+                    version,
+                    coin_type,
+                    amount,
+                } = other
+                {
+                    package_id == self_package_id
+                        && &self_transaction_module.to_string() == transaction_module
+                        && self_owner == owner
+                        && self_coin_id == coin_object_id
+                        && self_version == version
+                        && &self_coin_type.to_string() == coin_type
+                        && self_amount == amount
+                        && self_sender == sender
                 } else {
                     false
                 }

@@ -37,7 +37,7 @@ use sui_types::base_types::{
 use sui_types::committee::EpochId;
 use sui_types::crypto::{AuthorityStrongQuorumSignInfo, SignableBytes, Signature};
 use sui_types::error::SuiError;
-use sui_types::event::Event;
+use sui_types::event::{BalanceChangeType, Event};
 use sui_types::event::{EventEnvelope, EventType};
 use sui_types::filter::{EventFilter, TransactionFilter};
 use sui_types::gas::GasCostSummary;
@@ -1992,10 +1992,12 @@ pub enum SuiEvent {
         package_id: ObjectID,
     },
     /// Transfer objects to new address / wrap in another object / coin
+    #[serde(rename_all = "camelCase")]
     CoinBalanceChange {
         package_id: ObjectID,
         transaction_module: String,
         sender: SuiAddress,
+        change_type: BalanceChangeType,
         owner: Owner,
         coin_type: String,
         coin_object_id: ObjectID,
@@ -2108,6 +2110,7 @@ impl TryFrom<SuiEvent> for Event {
                 package_id,
                 transaction_module,
                 sender,
+                change_type,
                 owner,
                 coin_object_id: coin_id,
                 version,
@@ -2117,6 +2120,7 @@ impl TryFrom<SuiEvent> for Event {
                 package_id,
                 transaction_module: Identifier::from_str(&transaction_module)?,
                 sender,
+                change_type,
                 owner,
                 coin_type,
                 coin_object_id: coin_id,
@@ -2213,6 +2217,7 @@ impl SuiEvent {
                 package_id,
                 transaction_module,
                 sender,
+                change_type,
                 owner,
                 coin_object_id: coin_id,
                 version,
@@ -2222,6 +2227,7 @@ impl SuiEvent {
                 package_id,
                 transaction_module: transaction_module.to_string(),
                 sender,
+                change_type,
                 owner,
                 coin_object_id: coin_id,
                 version,
@@ -2377,6 +2383,7 @@ impl PartialEq<SuiEvent> for Event {
                 package_id: self_package_id,
                 transaction_module: self_transaction_module,
                 sender: self_sender,
+                change_type: self_change_type,
                 owner: self_owner,
                 coin_object_id: self_coin_id,
                 version: self_version,
@@ -2387,6 +2394,7 @@ impl PartialEq<SuiEvent> for Event {
                     package_id,
                     transaction_module,
                     sender,
+                    change_type,
                     owner,
                     coin_object_id,
                     version,
@@ -2402,6 +2410,7 @@ impl PartialEq<SuiEvent> for Event {
                         && &self_coin_type.to_string() == coin_type
                         && self_amount == amount
                         && self_sender == sender
+                        && self_change_type == change_type
                 } else {
                     false
                 }

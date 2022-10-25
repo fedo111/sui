@@ -188,7 +188,7 @@ async fn test_all_transaction_type() {
     let coin1 = get_random_sui(&client, sender, vec![]).await;
     let coin2 = get_random_sui(&client, sender, vec![coin1.0]).await;
     let tx = SingleTransactionKind::PaySui(PaySui {
-        coins: vec![coin1.clone(), coin2],
+        coins: vec![coin1, coin2],
         recipients: vec![recipient1, recipient2],
         amounts: vec![1000000, 2000000],
     });
@@ -208,7 +208,7 @@ async fn test_all_transaction_type() {
     let coin1 = get_random_sui(&client, sender, vec![]).await;
     let coin2 = get_random_sui(&client, sender, vec![coin1.0]).await;
     let tx = SingleTransactionKind::PayAllSui(PayAllSui {
-        coins: vec![coin1.clone(), coin2],
+        coins: vec![coin1, coin2],
         recipient,
     });
     test_transaction(&client, keystore, vec![recipient], sender, tx, Some(coin1)).await;

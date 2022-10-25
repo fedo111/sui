@@ -436,7 +436,7 @@ fn debit_coins_and_transfer<S>(
                     Owner::AddressOwner(*recipient),
                     tx_ctx.digest(),
                 );
-                temporary_store.write_object(&ctx, new_coin, WriteKind::Create);
+                temporary_store.write_object(ctx, new_coin, WriteKind::Create);
                 break; // done paying this recipieint, on to the next one
             } else {
                 // need to take all of this coin and some from a subsequent coin

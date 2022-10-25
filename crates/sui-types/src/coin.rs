@@ -163,7 +163,7 @@ pub fn transfer_coin<S>(
         Owner::AddressOwner(recipient),
         previous_transaction,
     );
-    temporary_store.write_object(&ctx, new_coin, WriteKind::Create);
+    temporary_store.write_object(ctx, new_coin, WriteKind::Create);
 }
 
 // A helper function for pay_sui and pay_all_sui.

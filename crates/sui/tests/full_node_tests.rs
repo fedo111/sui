@@ -265,8 +265,8 @@ async fn test_full_node_indexes() -> Result<(), anyhow::Error> {
         )
         .await?;
     assert_eq!(all_events.len(), 1);
-    assert_eq!(all_events[0].event, expected_event);
-    assert_eq!(all_events[0].tx_digest.unwrap(), digest);
+    assert_eq!(all_events[0].1.event, expected_event);
+    assert_eq!(all_events[0].1.tx_digest.unwrap(), digest);
 
     // query by sender
     let events_by_sender = node
@@ -274,8 +274,8 @@ async fn test_full_node_indexes() -> Result<(), anyhow::Error> {
         .get_events(EventQuery::Sender(sender), None, 10, false)
         .await?;
     assert_eq!(events_by_sender.len(), 1);
-    assert_eq!(events_by_sender[0].event, expected_event);
-    assert_eq!(events_by_sender[0].tx_digest.unwrap(), digest);
+    assert_eq!(events_by_sender[0].1.event, expected_event);
+    assert_eq!(events_by_sender[0].1.tx_digest.unwrap(), digest);
 
     // query by tx digest
     let events_by_tx = node
@@ -283,8 +283,8 @@ async fn test_full_node_indexes() -> Result<(), anyhow::Error> {
         .get_events(EventQuery::Transaction(digest), None, 10, false)
         .await?;
     assert_eq!(events_by_tx.len(), 1);
-    assert_eq!(events_by_tx[0].event, expected_event);
-    assert_eq!(events_by_tx[0].tx_digest.unwrap(), digest);
+    assert_eq!(events_by_tx[0].1.event, expected_event);
+    assert_eq!(events_by_tx[0].1.tx_digest.unwrap(), digest);
 
     // query by recipient
     let events_by_recipient = node
@@ -297,8 +297,8 @@ async fn test_full_node_indexes() -> Result<(), anyhow::Error> {
         )
         .await?;
     assert_eq!(events_by_recipient.len(), 1);
-    assert_eq!(events_by_recipient[0].event, expected_event);
-    assert_eq!(events_by_recipient[0].tx_digest.unwrap(), digest);
+    assert_eq!(events_by_recipient[0].1.event, expected_event);
+    assert_eq!(events_by_recipient[0].1.tx_digest.unwrap(), digest);
 
     // query by object
     let events_by_object = node
@@ -306,8 +306,8 @@ async fn test_full_node_indexes() -> Result<(), anyhow::Error> {
         .get_events(EventQuery::Object(transferred_object), None, 10, false)
         .await?;
     assert_eq!(events_by_object.len(), 1);
-    assert_eq!(events_by_object[0].event, expected_event);
-    assert_eq!(events_by_object[0].tx_digest.unwrap(), digest);
+    assert_eq!(events_by_object[0].1.event, expected_event);
+    assert_eq!(events_by_object[0].1.tx_digest.unwrap(), digest);
 
     // query by transaction module
     // Query by module ID
@@ -324,8 +324,8 @@ async fn test_full_node_indexes() -> Result<(), anyhow::Error> {
         )
         .await?;
     assert_eq!(events_by_module.len(), 1);
-    assert_eq!(events_by_module[0].event, expected_event);
-    assert_eq!(events_by_module[0].tx_digest.unwrap(), digest);
+    assert_eq!(events_by_module[0].1.event, expected_event);
+    assert_eq!(events_by_module[0].1.tx_digest.unwrap(), digest);
 
     Ok(())
 }
@@ -581,8 +581,8 @@ async fn test_full_node_sub_and_query_move_event_ok() -> Result<(), anyhow::Erro
         .get_events(EventQuery::MoveEvent(struct_tag_str), None, 10, false)
         .await?;
     assert_eq!(events_by_sender.len(), 1);
-    assert_eq!(events_by_sender[0].event, expected_event);
-    assert_eq!(events_by_sender[0].tx_digest.unwrap(), digest);
+    assert_eq!(events_by_sender[0].1.event, expected_event);
+    assert_eq!(events_by_sender[0].1.tx_digest.unwrap(), digest);
 
     // No more
     match timeout(Duration::from_secs(5), sub.next()).await {

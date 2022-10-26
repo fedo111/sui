@@ -441,7 +441,6 @@ impl RpcExampleProvider {
             amount: Some(100),
         };
         let events = vec![SuiEventEnvelope {
-            id: 10,
             timestamp: std::time::Instant::now().elapsed().as_secs(),
             tx_digest: Some(*tx_digest),
             event: sui_event.clone(),
@@ -498,7 +497,7 @@ impl RpcExampleProvider {
         let (_, _, _, _, result, events) = self.get_transfer_data_response();
         let page = EventPage {
             data: events.clone(),
-            next_cursor: events.last().map(|event| event.id + 1),
+            next_cursor: Some("1000:5".into()),
         };
         Examples::new(
             "sui_getEvents",

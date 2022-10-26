@@ -71,7 +71,7 @@ export type EventQuery =
     | { "Object": ObjectId }
     | { "TimeRange": { "start_time": number, "end_time": number } };
 
-export type EventId = number
+export type EventId = string
 
 export type PaginatedEvents = {
   data: SuiEvents;
